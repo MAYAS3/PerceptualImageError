@@ -9,8 +9,11 @@ from torch.autograd import Variable
 class PieAPP(
     nn.Module
 ):  # How to ensure that everything goes on a GPU? do I need to fetch?
-    def __init__(self, batch_size, num_patches):
+    def __init__(self, batch_size, num_patches, device):
         super(PieAPP, self).__init__()
+
+        self.device = device
+
         self.conv1 = nn.Conv2d(3, 64, 3, padding=1)
         self.conv2 = nn.Conv2d(64, 64, 3, padding=1)
         self.pool2 = nn.MaxPool2d(2, 2)
@@ -78,7 +81,7 @@ class PieAPP(
         const = Variable(
             torch.from_numpy(0.000001 * np.ones((1,))).float(), requires_grad=False
         )
-        const_cuda = const.cuda()
+        const_cuda = const.to(self.device)
         per_patch_weight = (
             self.fc2_weight(F.relu(self.fc1_weight(diff_coarse))) + const_cuda
         )

@@ -77,13 +77,8 @@ if args.sampling_mode == "sparse":
 else:
     stride_val = 6
 
-try:
-    gpu_num = float(args.gpu_id)
-    use_gpu = 1
-except ValueError:
-    use_gpu = 0
-except TypeError:
-    use_gpu = 0
+
+device = torch.device(f"cuda:{args.gpu_id}" if torch.cuda.is_available() else "cpu")
 
 y_loc = np.concatenate(
     (np.arange(0, rows - patch_size, stride_val), np.array([rows - patch_size])), axis=0
@@ -96,11 +91,11 @@ num_x = len(x_loc)
 num_patches_per_dim = 10
 
 ######## initialize the model
-PieAPP_net = PieAPP(batch_size, num_patches_per_dim)
+PieAPP_net = PieAPP(batch_size, num_patches_per_dim, device)
 PieAPP_net.load_state_dict(torch.load(args.weights_path))
 
-if use_gpu == 1:
-    PieAPP_net.cuda()
+
+PieAPP_net.to(device)
 
 score_accum = 0.0
 weight_accum = 0.0
@@ -164,9 +159,9 @@ for x_iter in range(0, -(-num_x // num_patches_per_dim)):
             torch.from_numpy(np.transpose(ref_patches, (0, 3, 1, 2))),
             requires_grad=False,
         )
-        if use_gpu == 1:
-            A_patches_var = A_patches_var.cuda()
-            ref_patches_var = ref_patches_var.cuda()
+        
+        A_patches_var = A_patches_var.to(device)
+        ref_patches_var = ref_patches_var.to(device)
 
         # forward pass
         _, PieAPP_patchwise_errors, PieAPP_patchwise_weights = PieAPP_net.compute_score(
